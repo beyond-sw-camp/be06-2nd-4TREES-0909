@@ -55,7 +55,28 @@ public class GroupBuyRepositoryDslImpl implements GroupBuyRepositoryDsl {
                         minMaxBetween(request.getMinPrice(), request.getMaxPrice()),
                         categoryNameEq(request.getCategory()))
                 .offset(pageable.getOffset())
-                .orderBy(groupBuy.gpbuyRemainQuantity.asc())
+                .orderBy(groupBuy.gpbuyRemainQuantity.asc(),
+                        groupBuy.gpbuyEndedAt.asc())
+                .limit(pageable.getPageSize() + 1)
+                .fetch();
+
+        boolean hasNext = result.size() > pageable.getPageSize();
+        if (hasNext) {
+            result.remove(result.size() - 1);
+        }
+        return new SliceImpl<>(result, pageable, hasNext);
+    }
+
+    @Override
+    public Slice<GroupBuy> findSliceByGpbuyStatus(Pageable pageable, String gpbuyStatus) {
+        List<GroupBuy> result = queryFactory
+                .selectFrom(groupBuy)
+                .join(groupBuy.bidList,bid)
+                .join(groupBuy.category,category)
+                .where(groupBuy.gpbuyStatus.eq(gpbuyStatus))
+                .offset(pageable.getOffset())
+                .orderBy(groupBuy.gpbuyRemainQuantity.asc()
+                ,groupBuy.gpbuyEndedAt.asc())
                 .limit(pageable.getPageSize() + 1)
                 .fetch();
 
